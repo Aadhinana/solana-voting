@@ -48,6 +48,12 @@ function App() {
     setWalletBalance(res);
   }
 
+  // Just create the address of PDA here but init the account when you vote.
+  const getDerivedAccountAddress = async () => {
+    let checkAccountPubkey = await PublicKey.createWithSeed(getPublicKey(), seed, VOTING_CONTRACT_PROGRAMID);
+    return checkAccountPubkey;
+  }
+
   const handleConnectWallet = async () => {
     // Check if phantom is installed or not and prompt to install it.
     if (window.solana && window.solana.isPhantom) {
@@ -57,6 +63,7 @@ function App() {
       // update address and balance of the wallet
       setAddress(window.solana.publicKey.toString());
       getBalance();
+      getDerivedAccountAddress();
       // console.log(getConnection())
     } else {
       alert("Phantom wallet is not installed. Please install.");
