@@ -20,8 +20,9 @@ function App() {
   }
 
   const getPublicKey = () => {
-    // Not sure which one to use. SO just incase -> Works to fetch balance
-    let userAddress = new PublicKey(window.solana.publicKey.toBuffer());
+    // Okay so I had my localnet offline and thus it was failing. Nothing to do with
+    // Publickey or Keypair
+    let userAddress = new PublicKey(window.solana.publicKey.toString());
     // console.log(window.solana.publicKey.toBuffer())
     // console.dir(userAddress);
     // console.log(userAddress.__proto__);
