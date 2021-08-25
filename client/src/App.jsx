@@ -10,8 +10,11 @@ function App() {
   const [walletBalance, setWalletBalance] = useState(null);
   const [address, setAddress] = useState(null);
 
-  const handleVote = (votedFor) => {
-    console.log("voted for", votedFor)
+
+  const getRecentBlockhash = async () => {
+    let connection = getConnection();
+    let blockhash = await connection.getRecentBlockhash("max");
+    return blockhash;
   }
 
   const getConnection = () => {
