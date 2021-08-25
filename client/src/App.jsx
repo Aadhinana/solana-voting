@@ -1,6 +1,11 @@
 import React, { useState } from 'react'
 
-import { Connection, PublicKey, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Connection, PublicKey, Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
+
+// Need to deploy the contract and figure out how to create the account for data storage
+const VOTING_CONTRACT_PROGRAMID = "";
+const VOTING_CONTRACT_ACCOUNT = "";
+const seed = "something";
 
 function App() {
 
@@ -10,6 +15,49 @@ function App() {
   const [walletBalance, setWalletBalance] = useState(null);
   const [address, setAddress] = useState(null);
 
+  const handleVote = async (votedFor) => {
+    console.log("voted for", votedFor);
+
+    // This needs to be calculated in a better way, like hit the chain and caluclate
+    let lamportsForRentExemption = LAMPORTS_PER_SOL * 2;
+
+    let userAccountAddress = getPublicKey(); 
+    let checkAccountPubkey = getDerivedAccountAddress(); 
+
+    // create the PDA Account of this user
+    let transaction = await SystemProgram.createAccountWithSeed({
+      basePubkey: userAccountAddress,
+      fromPubkey: userAccountAddress,
+      newAccountPubkey: checkAccountPubkey,
+      programId: VOTING_CONTRACT_PROGRAMID,
+      seed: seed,
+      lamports: lamportsForRentExemption,
+      space: 4
+    });
+
+    const instruction_data = new Uint8Array([votedFor]);
+
+    // Create instruction to send to the chain
+    // includes all accounts required, data and the program Id
+    const instruction = new TransactionInstruction({
+      keys: [
+        {pubkey: VOTING_CONTRACT_ACCOUNT, isSigner: false, isWritable: true},
+        {pubkey: checkAccountPubkey, isSigner: false, isWritable: false},
+        {pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false}, 
+        {pubkey: userAccountAddress, isSigner: true, isWritable: false}
+      ],
+      data: instruction_data,
+      programId: VOTING_CONTRACT_PROGRAMID
+    })
+
+    transaction = transaction.add(instruction);
+
+    // Add blockhash and sign transaction
+    transaction.recentBlockhash = (await getRecentBlockhash()).blockhash;
+    transaction.sign(userAccountAddress);
+
+    // Serialize transaction and send it over to chain
+  }
 
   const getRecentBlockhash = async () => {
     let connection = getConnection();
