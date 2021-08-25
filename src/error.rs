@@ -18,7 +18,19 @@ pub enum VoteError {
     AmountOverflow,
     // Unexpected Candidate
     #[error("Unexpected Candidate")]
-    UnexpectedCandidate
+    UnexpectedCandidate,
+    // Incorrect Owner
+    #[error("Incorrect Owner")]
+    IncorrectOwner,
+    // Account Owes Rent
+    #[error("Account Not Rent Exempt")]
+    AccountNotRentExempt,
+    // Account does not match Check account
+    #[error("Account Not Check Account")]
+    AccountNotCheckAccount,
+    // Already Voted
+    #[error("Already Voted")]
+    AlreadyVoted,
 }
 
 impl From<VoteError> for ProgramError {
