@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 
+import { Connection } from '@solana/web3.js';
+
 function App() {
 
   const [voteCount1, setVoteCount1] = useState(0);
@@ -12,11 +14,32 @@ function App() {
     console.log("voted for", votedFor)
   }
 
+  const getConnection = () => {
+    let connection = new Connection("http://localhost:8899", "confirmed");
+    return connection;
+  }
+
+  const handleConnectWallet = async () => {
+    // Check if phantom is installed or not and prompt to install it.
+    if (window.solana && window.solana.isPhantom) {
+      const res = await window.solana.connect();
+      // console.log(res);// undefined
+
+      // update address and balance of the wallet
+      setAddress(window.solana.publicKey.toString());
+
+      console.log(getConnection())
+    } else {
+      alert("Phantom wallet is not installed. Please install.");
+      window.open("https://phantom.app/", "_target");
+    }
+  }
+
   return (
     <div className="App">
       <h1>Voting Contracts</h1>
-      <p>Connect your wallet</p>
-      { !address &&<button>Connect Wallet</button> }
+
+      {!address && <p>Connect your wallet</p> && <button onClick={handleConnectWallet}>Connect Wallet</button>}
       {address && <p>{address} is the user address that is connected right now!</p>}
       {walletBalance && <p>{walletBalance} is the amount of money this connected user has</p>}
       <br />
