@@ -31,9 +31,17 @@ function App() {
     return userAddress;
   }
 
+  const handleRequestAirdrop = async () => {
+    // handle error case later -> Also one behind. Maybe react thing?
+    let connection = getConnection();
+    await connection.requestAirdrop(getPublicKey(), LAMPORTS_PER_SOL)
+    getBalance();
+  }
+
   const getBalance = async () => {
     let connection = getConnection();
     const res = await connection.getBalance(getPublicKey());
+    console.log(res);
     setWalletBalance(res);
   }
 
@@ -59,7 +67,8 @@ function App() {
 
       {!address && <p>Connect your wallet</p> && <button onClick={handleConnectWallet}>Connect Wallet</button>}
       {address && <p>{address} is the user address that is connected right now!</p>}
-      {(walletBalance !== null ) && <p>{walletBalance/LAMPORTS_PER_SOL} SOL is the amount of money this connected user has</p>}
+      {(walletBalance !== null) && <p>{walletBalance / LAMPORTS_PER_SOL} SOL is the amount of money this connected user has</p>}
+      {address && <button onClick={handleRequestAirdrop}>Request Airdrop</button>}
       <br />
 
       <div>
