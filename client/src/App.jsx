@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-import { Connection } from '@solana/web3.js';
+import { Connection, PublicKey, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 function App() {
 
@@ -19,6 +19,23 @@ function App() {
     return connection;
   }
 
+  const getPublicKey = () => {
+    // Not sure which one to use. SO just incase -> Works to fetch balance
+    let userAddress = new PublicKey(window.solana.publicKey.toBuffer());
+    // console.log(window.solana.publicKey.toBuffer())
+    // console.dir(userAddress);
+    // console.log(userAddress.__proto__);
+    // let user = new Keypair(userAddress);
+    // console.log(user);
+    return userAddress;
+  }
+
+  const getBalance = async () => {
+    let connection = getConnection();
+    const res = await connection.getBalance(getPublicKey());
+    setWalletBalance(res);
+  }
+
   const handleConnectWallet = async () => {
     // Check if phantom is installed or not and prompt to install it.
     if (window.solana && window.solana.isPhantom) {
@@ -27,8 +44,8 @@ function App() {
 
       // update address and balance of the wallet
       setAddress(window.solana.publicKey.toString());
-
-      console.log(getConnection())
+      getBalance();
+      // console.log(getConnection())
     } else {
       alert("Phantom wallet is not installed. Please install.");
       window.open("https://phantom.app/", "_target");
@@ -41,7 +58,7 @@ function App() {
 
       {!address && <p>Connect your wallet</p> && <button onClick={handleConnectWallet}>Connect Wallet</button>}
       {address && <p>{address} is the user address that is connected right now!</p>}
-      {walletBalance && <p>{walletBalance} is the amount of money this connected user has</p>}
+      {(walletBalance !== null ) && <p>{walletBalance/LAMPORTS_PER_SOL} SOL is the amount of money this connected user has</p>}
       <br />
 
       <div>
