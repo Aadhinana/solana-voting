@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 
-import { Connection, PublicKey, Keypair, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
+import { Connection, PublicKey, Transaction, LAMPORTS_PER_SOL, SystemProgram, TransactionInstruction, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
+import bs58 from "bs58";
+import {Buffer} from 'buffer';
 
 // Need to deploy the contract and figure out how to create the account for data storage
-const VOTING_CONTRACT_PROGRAMID = "";
+const VOTING_CONTRACT_PROGRAMID = new PublicKey("Csp4tMLqtNH4MmvwJmdwgXGiBQTmAzYJeF5yuYkvQCLB");
 const VOTING_CONTRACT_ACCOUNT = "";
 const seed = "something";
 
@@ -21,11 +23,11 @@ function App() {
     // This needs to be calculated in a better way, like hit the chain and caluclate
     let lamportsForRentExemption = LAMPORTS_PER_SOL * 2;
 
-    let userAccountAddress = getPublicKey(); 
-    let checkAccountPubkey = getDerivedAccountAddress(); 
+    let userAccountAddress = getPublicKey();
+    let checkAccountPubkey = getDerivedAccountAddress();
 
     // create the PDA Account of this user
-    let transaction = await SystemProgram.createAccountWithSeed({
+    let Ix = await SystemProgram.createAccountWithSeed({
       basePubkey: userAccountAddress,
       fromPubkey: userAccountAddress,
       newAccountPubkey: checkAccountPubkey,
@@ -39,24 +41,40 @@ function App() {
 
     // Create instruction to send to the chain
     // includes all accounts required, data and the program Id
-    const instruction = new TransactionInstruction({
+    const Iy = new TransactionInstruction({
       keys: [
-        {pubkey: VOTING_CONTRACT_ACCOUNT, isSigner: false, isWritable: true},
-        {pubkey: checkAccountPubkey, isSigner: false, isWritable: false},
-        {pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false}, 
-        {pubkey: userAccountAddress, isSigner: true, isWritable: false}
+        { pubkey: VOTING_CONTRACT_ACCOUNT, isSigner: false, isWritable: true },
+        { pubkey: checkAccountPubkey, isSigner: false, isWritable: false },
+        { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+        { pubkey: userAccountAddress, isSigner: true, isWritable: false }
       ],
       data: instruction_data,
       programId: VOTING_CONTRACT_PROGRAMID
     })
 
-    transaction = transaction.add(instruction);
+    let tx = new Transaction();
+    tx = tx.add(Ix, Iy);
 
     // Add blockhash and sign transaction
-    transaction.recentBlockhash = (await getRecentBlockhash()).blockhash;
-    transaction.sign(userAccountAddress);
-
+    tx.recentBlockhash = (await getRecentBlockhash()).blockhash;
+    tx.feePayer = getPublicKey();
+    console.log(tx.serializeMessage())
     // Serialize transaction and send it over to chain
+
+    const signedTransaction = await window.solana.request({
+      method: "signTransaction",
+      params: {
+        message: bs58.encode(tx.serializeMessage()),
+      },
+    });
+    // const signedTransaction = await window.solana.signTransaction(tx.serializeMessage());
+    // console.log(signedTransaction);
+
+    // const signature = bs58.decode(signedTransaction.signature);
+    // const publicKey = new PublicKey(signedTransaction.publicKey);
+    // tx.addSignature(publicKey, signature);
+
+    console.log(tx)
   }
 
   const getRecentBlockhash = async () => {
@@ -71,14 +89,7 @@ function App() {
   }
 
   const getPublicKey = () => {
-    // Okay so I had my localnet offline and thus it was failing. Nothing to do with
-    // Publickey or Keypair
     let userAddress = new PublicKey(window.solana.publicKey.toString());
-    // console.log(window.solana.publicKey.toBuffer())
-    // console.dir(userAddress);
-    // console.log(userAddress.__proto__);
-    // let user = new Keypair(userAddress);
-    // console.log(user);
     return userAddress;
   }
 
@@ -92,27 +103,25 @@ function App() {
   const getBalance = async () => {
     let connection = getConnection();
     const res = await connection.getBalance(getPublicKey());
-    console.log(res);
     setWalletBalance(res);
   }
 
   // Just create the address of PDA here but init the account when you vote.
   const getDerivedAccountAddress = async () => {
     let checkAccountPubkey = await PublicKey.createWithSeed(getPublicKey(), seed, VOTING_CONTRACT_PROGRAMID);
+    console.log(checkAccountPubkey.toBase58(), " is the checked vote PDA")
     return checkAccountPubkey;
   }
 
   const handleConnectWallet = async () => {
     // Check if phantom is installed or not and prompt to install it.
     if (window.solana && window.solana.isPhantom) {
-      const res = await window.solana.connect();
-      // console.log(res);// undefined
+      await window.solana.connect();
 
       // update address and balance of the wallet
       setAddress(window.solana.publicKey.toString());
+      console.log(getPublicKey().toBase58(), " is the user of the dapp")
       getBalance();
-      getDerivedAccountAddress();
-      // console.log(getConnection())
     } else {
       alert("Phantom wallet is not installed. Please install.");
       window.open("https://phantom.app/", "_target");
